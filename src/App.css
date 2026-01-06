@@ -1,0 +1,67 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  width: 100%;
+  gap: 8px; /* opzionale */
+  --cell-size: min(180px, 6vw); /* dimensione massima di ogni cella */
+}
+
+.cell {
+  aspect-ratio: 1 / 1; /* quadrato perfetto */
+  display: flex; /* centra il testo */
+  align-items: center;
+  justify-content: center;
+  width: var(--cell-size);
+  font-size: calc(var(--cell-size) * 0.45);
+}
+
+.spacer {
+  background: transparent; /* “casella vuota” */
+  border: none; /* opzionale */
+}
+
+.filled {
+  background: #9e2578;
+  color: #9e2578;
+}
+
+.fly-in-to-not-found-letters {
+  animation: fly-to-not-found-letters 2s ease-out forwards;
+}
+
+/* stato iniziale = centro dello schermo + grande */
+@keyframes fly-to-not-found-letters {
+  from {
+    transform: translate(-50%, -50%) scale(15);
+    opacity: 1;
+  }
+  to {
+    position: relative;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.wheel-bg {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 65%;
+  opacity: 0.3;
+
+  z-index: -1; /* dietro ai contenuti */
+  pointer-events: none; /* non cattura click */
+
+  animation: spin 360s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
