@@ -3,7 +3,7 @@
   grid-template-columns: repeat(14, 1fr);
   width: 100%;
   gap: 8px; /* opzionale */
-  --cell-size: min(180px, 6vw); /* dimensione massima di ogni cella */
+  --cell-size: min(180px, 5vw); /* dimensione massima di ogni cella */
 }
 
 .cell {
@@ -11,7 +11,7 @@
   display: flex; /* centra il testo */
   align-items: center;
   justify-content: center;
-  width: var(--cell-size);
+  height: var(--cell-size);
   font-size: calc(var(--cell-size) * 0.45);
 }
 
@@ -49,7 +49,7 @@
   transform: translate(-50%, -50%);
 
   width: 65%;
-  opacity: 0.3;
+  opacity: 0.2;
 
   z-index: -1; /* dietro ai contenuti */
   pointer-events: none; /* non cattura click */
