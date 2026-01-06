@@ -50,10 +50,9 @@
 .wheel-bg {
   position: fixed;
   left: 50%;
-  top: 50%;
   transform: translate(-50%, -50%);
 
-  width: 70vw;
+  width: 80vw;
   opacity: 0.2;
 
   z-index: -1; /* dietro ai contenuti */

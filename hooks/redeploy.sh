@@ -2,6 +2,7 @@
 
 cd /var/www/ruota-della-fortuna-frontend/
 git pull -f origin main
+git config core.fileMode false
 npm install
 npm run build
 
