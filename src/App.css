@@ -93,11 +93,10 @@ body {
 
 .wheel-bg {
   position: fixed;
-  top: max(40%, 16vh);
+  top: 600px;
   left: 50%;
-  transform: translate(-50%, -50%);
 
-  /* width: min(80vw, 80vh); */
+  transform: translate(-50%, -50%);
   opacity: 0.2;
 
   z-index: -1; /* dietro ai contenuti */
