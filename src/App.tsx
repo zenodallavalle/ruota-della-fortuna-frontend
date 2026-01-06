@@ -19,8 +19,6 @@ import ruota_della_fortuna_img from '/ruota_della_fortuna.jpg?url';
 const emptyGameData: GameData = {
   sentenceToGuess: '',
   suggestion: '',
-  usedLetters: '',
-  notFoundLetters: '',
   roundExpress: false,
   showNotFoundLetters: false,
 };
@@ -37,6 +35,8 @@ function App() {
     sentenceToGuessData,
     vocalsToReveal,
     consonantsToReveal,
+    notFoundLetters,
+    animating,
     revealLetter,
     revealAtIndex,
   } = useSentenceToGuess(gameData.sentenceToGuess);
@@ -55,22 +55,9 @@ function App() {
 
   const onPickLetter = () => {
     const letter = inputValue.trim().toUpperCase();
-    if (gameData.usedLetters.includes(letter)) {
-      setShowAlreadyUsedLetterModal(true);
-      return;
-    }
 
-    setGameData({
-      ...gameData,
-      usedLetters: gameData.usedLetters + letter,
-    });
     const found = revealLetter(letter);
     if (!found) {
-      setGameData({
-        ...gameData,
-        usedLetters: gameData.usedLetters + letter,
-        notFoundLetters: gameData.notFoundLetters + letter,
-      });
       if (gameData.showNotFoundLetters) {
         setInputValue('');
       } else {
@@ -82,6 +69,7 @@ function App() {
   };
 
   const pickLetterDisabled =
+    animating ||
     !gameData.sentenceToGuess ||
     inputValue.length !== 1 ||
     Boolean(inputValue.match(/[^a-zA-Z]/));
@@ -167,6 +155,7 @@ function App() {
             sentenceToGuessData={sentenceToGuessData}
             gameData={gameData}
             revealAtIndex={revealAtIndex}
+            notFoundLetters={notFoundLetters}
           />
         </div>
       ) : (

@@ -1,4 +1,4 @@
-import type { SentenceToGuessData } from './useSentenceToGuess.ts';
+import type { CharsData } from './useSentenceToGuess.ts';
 
 import type GameData from './types/GameData.ts';
 
@@ -11,19 +11,20 @@ export default function MainTable({
   sentenceToGuessData,
   gameData,
   revealAtIndex,
+  notFoundLetters,
 }: {
-  sentenceToGuessData: SentenceToGuessData;
+  sentenceToGuessData: CharsData;
   gameData: GameData;
   revealAtIndex: (index: number) => void;
+  notFoundLetters: Set<string>;
 }) {
-  const { suggestion, notFoundLetters, roundExpress, showNotFoundLetters } =
-    gameData;
+  const { suggestion, roundExpress, showNotFoundLetters } = gameData;
   let charIndex = 0;
   return (
     <div className="container-fluid">
       <div className="w-100 mb-3">
         {Array.from({ length: ROWS }).map((_, r) => (
-          <div className="board text-center align-items-center justify-content-center">
+          <div key={`row-${r}`} className="board">
             {Array.from({ length: COLS }).map((_, c) => {
               const isExcluded = EXCLUDED.has(`${r}-${c}`);
               if (isExcluded) {
@@ -42,6 +43,8 @@ export default function MainTable({
                   cls += ' shown bg-light text-dark';
                 } else if (data.isShown === 'animating') {
                   cls += ' animating bg-warning text-warning';
+                } else if (data.isShown === 'enhance-already-shown') {
+                  cls += ' enhance-already-shown bg-warning text-dark';
                 } else {
                   cls += ' bg-light text-light';
                 }
@@ -53,7 +56,7 @@ export default function MainTable({
                   disabled={!data.isLetter || data.isShown !== false}
                   onClick={() => revealAtIndex(data.index)}
                 >
-                  {data.isLetter && data.isShown !== true
+                  {data.isLetter && data.isShown === false
                     ? 'x'
                     : data.char === ' '
                     ? '_'
@@ -61,7 +64,7 @@ export default function MainTable({
                 </button>
               ) : (
                 <div key={`cell-${r}-${c}`} className={cls}>
-                  {data.isLetter && data.isShown !== true
+                  {data.isLetter && data.isShown === false
                     ? 'x'
                     : data.char === ' '
                     ? '_'
@@ -71,27 +74,27 @@ export default function MainTable({
             })}
           </div>
         ))}
-      </div>
-
-      {suggestion && (
-        <div className="w-100 mb-4 text-center">
-          <hr />
-          <h5>{suggestion}</h5>
-        </div>
-      )}
-      {showNotFoundLetters && (
-        <div className="text-center mt-3">
-          <hr />
-          <h6>Lettere non trovate</h6>
-          <div className="d-flex justify-content-center">
-            {notFoundLetters.split('').map((letter) => (
+        {showNotFoundLetters && notFoundLetters.size > 0 && (
+          <div className="board not-found-letters mt-3">
+            {Array.from(notFoundLetters).map((letter) => (
               <div
-                key={`not-found-letter-${letter}`}
-                className="me-1 fly-in-to-not-found-letters"
+                key={`not-found-${letter}`}
+                className="cell cell-bordered cell-diagonal-line fly-in-to-not-found-letters bg-white fw-bold"
               >
                 {letter}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {suggestion && (
+        <div className="w-100 mb-4">
+          <hr className="pb-0" />
+          <div className="d-flex justify-content-center pb-2">
+            <span className="px-3 suggestion fw-bold">
+              {suggestion.toUpperCase()}
+            </span>
           </div>
         </div>
       )}

@@ -1,3 +1,7 @@
+body {
+  background-color: white;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(14, 1fr);
@@ -17,7 +21,24 @@
 }
 
 .cell-bordered {
-  border: 0.4vw solid #000000;
+  --cell-border-width: 0.4vw;
+  --cell-border-color: #000000;
+  border: var(--cell-border-width) solid var(--cell-border-color);
+  position: relative;
+}
+
+.cell-diagonal-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    135deg,
+    transparent calc(50% - var(--cell-border-width) / 2),
+    var(--cell-border-color) calc(50% - var(--cell-border-width) / 3),
+    var(--cell-border-color) calc(50% + var(--cell-border-width) / 3),
+    transparent calc(50% + var(--cell-border-width) / 2)
+  );
+  pointer-events: none;
 }
 
 .spacer {
@@ -31,29 +52,52 @@
 }
 
 .fly-in-to-not-found-letters {
-  animation: fly-to-not-found-letters 2s ease-out forwards;
+  animation: slide-from-right 2s ease-out forwards;
 }
 
-/* stato iniziale = centro dello schermo + grande */
-@keyframes fly-to-not-found-letters {
+@keyframes slide-from-right {
   from {
-    transform: translate(-50%, -50%) scale(15);
-    opacity: 1;
+    transform: translateX(100%);
   }
   to {
-    position: relative;
     transform: none;
-    opacity: 1;
   }
+}
+
+.enhance-already-shown {
+  animation: enhance 3s ease-in-out;
+}
+
+@keyframes enhance {
+  0% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  25% {
+    rotate: -20deg;
+    scale: 1.5;
+  }
+  75% {
+    rotate: 20deg;
+    scale: 1.5;
+  }
+  100% {
+    rotate: 0deg;
+    scale: 1;
+  }
+}
+
+.suggestion {
+  font-size: 2.5vw;
 }
 
 .wheel-bg {
   position: fixed;
-  top: 40%;
+  top: max(40%, 16vh);
   left: 50%;
   transform: translate(-50%, -50%);
 
-  width: 80vw;
+  /* width: min(80vw, 80vh); */
   opacity: 0.2;
 
   z-index: -1; /* dietro ai contenuti */

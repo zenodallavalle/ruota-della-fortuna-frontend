@@ -1,15 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
-export interface SentenceToGuessChar {
+type isShownType = 'animating' | 'enhance-already-shown' | boolean;
+
+export interface CharData {
   char: string;
   isLetter: boolean;
-  isShown: 'animating' | boolean;
+  isShown: isShownType;
   index: number;
 }
-// SentenceToGuessData is a type alias for an array of SentenceToGuessChar
-export type SentenceToGuessData = SentenceToGuessChar[];
+// CharsData is a type alias for an array of CharData
+export type CharsData = CharData[];
 
 const animationDelayMs = 500;
+
+class TimeoutWithExpired {
+  timeout: ReturnType<typeof setTimeout>;
+  expired: boolean = false;
+  constructor(fn: (...args: any[]) => void, delay: number) {
+    this.timeout = setTimeout((...args: any[]) => {
+      this.expired = true;
+      fn(...args);
+    }, delay);
+  }
+  clear() {
+    clearTimeout(this.timeout);
+    this.expired = true;
+  }
+}
 
 function getRegExForLetter(letter: string): RegExp {
   const e = 'eéè';
@@ -83,7 +100,7 @@ function layoutSentence(sentence: string): string[] {
   return rows;
 }
 
-function initializeSentenceToGuessData(sentence: string): SentenceToGuessData {
+function initializeSentenceToGuessData(sentence: string): CharsData {
   return sentence.split('').map((char, index) => ({
     char,
     isLetter: Boolean(char.match(/[a-zèéèáàíìóòúùA-ZÈÉÈÁÀÍÌÓÒÚÙ]/)),
@@ -94,16 +111,6 @@ function initializeSentenceToGuessData(sentence: string): SentenceToGuessData {
 
 const vocalChars = 'aeiouàèéìíòóùúAEIOUÀÈÉÌÍÒÓÙÚ';
 const consonantChars = 'bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ';
-
-function getCharType(char: string): 'vocal' | 'consonant' | 'other' {
-  if (vocalChars.includes(char)) {
-    return 'vocal';
-  } else if (consonantChars.includes(char)) {
-    return 'consonant';
-  } else {
-    return 'other';
-  }
-}
 
 function extractVocals(sentence: string): Set<string> {
   const vocals = new Set<string>();
@@ -128,41 +135,46 @@ function extractConsonants(sentence: string): Set<string> {
 
 export default function useSentenceToGuess(sentence: string) {
   const originalSentence = sentence.trim().toUpperCase();
-  const animatingToShownTimeoutRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null);
-  const timeoutRefs = useRef<(ReturnType<typeof setTimeout> | null)[]>(
+  const animatingToShownTimeoutRef = useRef<TimeoutWithExpired | null>(null);
+  const timeoutRefs = useRef<(TimeoutWithExpired | null)[]>(
     originalSentence.split('').map(() => null)
   );
-  const [layedOutSentence, setLayedOutSentence] = useState<string>(
-    layoutSentence(originalSentence).join('')
-  );
-  const [sentenceToGuessData, setSentenceToGuessData] =
-    useState<SentenceToGuessData>(
-      initializeSentenceToGuessData(layoutSentence(originalSentence).join(''))
-    );
+  const [layedOutSentence, setLayedOutSentence] = useState<string>('');
+  const [sentenceToGuessData, setSentenceToGuessData] = useState<CharsData>([]);
 
-  const [vocalsToReveal, setVocalsToReveal] = useState<Set<string>>(
-    extractVocals(originalSentence)
+  const [usedLetters, setUsedLetters] = useState(new Set<string>());
+  const [notFoundLetters, setNotFoundLetters] = useState(new Set<string>());
+
+  const vocalsInTheSentence = useMemo(
+    () => extractVocals(originalSentence),
+    [originalSentence]
   );
-  const [consonantsToReveal, setConsonantsToReveal] = useState<Set<string>>(
-    extractConsonants(originalSentence)
+  const consonantsInTheSentence = useMemo(
+    () => extractConsonants(originalSentence),
+    [originalSentence]
   );
+
+  const vocalsToReveal = vocalsInTheSentence.difference(usedLetters);
+  const consonantsToReveal = consonantsInTheSentence.difference(usedLetters);
+
+  const animating =
+    timeoutRefs.current.some((t) => t !== null && !t.expired) ||
+    (animatingToShownTimeoutRef.current !== null &&
+      !animatingToShownTimeoutRef.current.expired);
 
   useEffect(() => {
-    setLayedOutSentence(layoutSentence(originalSentence).join(''));
-    setSentenceToGuessData(
-      initializeSentenceToGuessData(layoutSentence(originalSentence).join(''))
-    );
-    setVocalsToReveal(extractVocals(originalSentence));
-    setConsonantsToReveal(extractConsonants(originalSentence));
+    const _layedOutSentence = layoutSentence(originalSentence).join('');
+    setLayedOutSentence(_layedOutSentence);
+    setSentenceToGuessData(initializeSentenceToGuessData(_layedOutSentence));
+    setUsedLetters(new Set<string>());
+    setNotFoundLetters(new Set<string>());
     // cleanup timeouts on sentence change
     cleanUpTimeouts();
   }, [originalSentence]);
 
-  const setShownImmediate = (index: number, shown: 'animating' | boolean) => {
+  const setShownImmediate = (index: number, shown: isShownType) => {
     if (index < 0 || index >= sentenceToGuessData.length) return;
-    setSentenceToGuessData((originalData: SentenceToGuessData) => {
+    setSentenceToGuessData((originalData: CharsData) => {
       const newData = [...originalData];
       newData[index].isShown = shown;
       return newData;
@@ -171,12 +183,12 @@ export default function useSentenceToGuess(sentence: string) {
 
   const setShown = (
     index: number,
-    shown: 'animating' | boolean,
+    shown: isShownType,
     timeout: number | null = null
   ) => {
     if (index < 0 || index >= sentenceToGuessData.length) return;
     if (timeout) {
-      timeoutRefs.current[index] = setTimeout(() => {
+      timeoutRefs.current[index] = new TimeoutWithExpired(() => {
         setShownImmediate(index, shown);
       }, timeout);
     } else {
@@ -185,51 +197,64 @@ export default function useSentenceToGuess(sentence: string) {
   };
 
   const revealAtIndex = (index: number) => {
+    if (sentenceToGuessData[index].isShown === true) return;
     setShown(index, 'animating');
-    animatingToShownTimeoutRef.current = setTimeout(() => {
+    animatingToShownTimeoutRef.current = new TimeoutWithExpired(() => {
       setShown(index, true);
     }, animationDelayMs);
   };
 
   const revealLetter = (letter: string) => {
+    setUsedLetters((original) => {
+      const newSet = new Set(original);
+      newSet.add(letter);
+      return newSet;
+    });
     const regex = getRegExForLetter(letter);
     let match;
     const matchesIndices: number[] = [];
     while ((match = regex.exec(layedOutSentence)) !== null) {
       matchesIndices.push(match.index);
     }
-    matchesIndices.forEach((index, i) => {
-      setShown(index, 'animating', i * animationDelayMs);
-    });
-    animatingToShownTimeoutRef.current = setTimeout(() => {
+    if (!usedLetters.has(letter)) {
+      // only set used letter if not already present
       matchesIndices.forEach((index, i) => {
-        setShown(index, true, animationDelayMs + animationDelayMs * i);
+        setShown(index, 'animating', i * animationDelayMs);
       });
-    }, matchesIndices.length * animationDelayMs);
-    const letterType = getCharType(letter);
-    if (letterType === 'vocal') {
-      setVocalsToReveal((original) => {
-        const newSet = new Set(original);
-        newSet.delete(letter);
-        return newSet;
-      });
-    } else if (letterType === 'consonant') {
-      setConsonantsToReveal((original) => {
-        const newSet = new Set(original);
-        newSet.delete(letter);
-        return newSet;
-      });
+      animatingToShownTimeoutRef.current = new TimeoutWithExpired(() => {
+        matchesIndices.forEach((index, i) => {
+          setShown(index, true, animationDelayMs + animationDelayMs * i);
+        });
+      }, matchesIndices.length * animationDelayMs);
+      if (matchesIndices.length === 0) {
+        setNotFoundLetters((original) => {
+          const newSet = new Set(original);
+          newSet.add(letter);
+          return newSet;
+        });
+      }
+    } else {
+      // letter was already used
+      if (matchesIndices.length > 0) {
+        // letter is in the sentence, but was already revealed
+        matchesIndices.forEach((index, i) => {
+          setShown(index, 'enhance-already-shown', i * animationDelayMs);
+        });
+        animatingToShownTimeoutRef.current = new TimeoutWithExpired(() => {
+          matchesIndices.forEach((index, i) => {
+            setShown(index, true, animationDelayMs + animationDelayMs * i);
+          });
+        }, 3000 + matchesIndices.length * animationDelayMs);
+      }
     }
     return matchesIndices.length > 0;
   };
 
   function cleanUpTimeouts() {
     timeoutRefs.current.forEach((timeout) => {
-      if (timeout) clearTimeout(timeout);
+      timeout?.clear();
     });
-    if (animatingToShownTimeoutRef.current) {
-      clearTimeout(animatingToShownTimeoutRef.current);
-    }
+    animatingToShownTimeoutRef.current?.clear();
   }
 
   useEffect(() => {
@@ -244,6 +269,9 @@ export default function useSentenceToGuess(sentence: string) {
     sentenceToGuessData,
     vocalsToReveal,
     consonantsToReveal,
+    usedLetters,
+    notFoundLetters,
+    animating,
     setShown,
     revealLetter,
     revealAtIndex,
