@@ -1,9 +1,11 @@
 .board {
   display: grid;
   grid-template-columns: repeat(14, 1fr);
-  width: 100%;
-  gap: 8px; /* opzionale */
-  --cell-size: min(180px, 5vw); /* dimensione massima di ogni cella */
+  max-width: 80vw;
+  margin-bottom: 0.3vw;
+  gap: 0.3vw;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cell {
@@ -11,8 +13,11 @@
   display: flex; /* centra il testo */
   align-items: center;
   justify-content: center;
-  height: var(--cell-size);
-  font-size: calc(var(--cell-size) * 0.45);
+  font-size: 2.5vw;
+}
+
+.cell-bordered {
+  border: 0.4vw solid #000000;
 }
 
 .spacer {

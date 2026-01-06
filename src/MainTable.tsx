@@ -23,14 +23,14 @@ export default function MainTable({
     <div className="container-fluid">
       <div className="w-100 mb-3">
         {Array.from({ length: ROWS }).map((_, r) => (
-          <div className="board mb-2">
+          <div className="board text-center align-items-center justify-content-center">
             {Array.from({ length: COLS }).map((_, c) => {
               const isExcluded = EXCLUDED.has(`${r}-${c}`);
               if (isExcluded) {
                 return <div key={`spacer-${r}-${c}`} className="cell spacer" />;
               }
               const data = sentenceToGuessData[charIndex++];
-              let cls = 'cell border border-dark border-4 fw-bold';
+              let cls = 'cell cell-bordered fw-bold';
               if (!data.isLetter) {
                 if (data.char === ' ') {
                   cls += ' filled';
